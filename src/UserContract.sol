@@ -2,16 +2,29 @@
 pragma solidity ^0.8.19;
 
 import "@anon-aadhaar/contracts/interfaces/IAnonAadhaar.sol";
+import "./ZKContract.sol";
 
 contract UserContract {
     address public adminAddress;
     address public userAddress;
     address public anonAadhaarVerifierAddr;
+    address public agentAddress;
+    address public zkContractAddr;
 
+    enum BlogStatus {
+        Unverified,
+        Verified,
+        NSFW
+    }
     struct Blog {
         string blobId; // valrus id
         string blobHash; // blob hash
         bool isPublished; // published status
+        BlogStatus status; // status of the blog
+        uint256 readabilityScore; // readability score
+        uint256 estimatedReadTime; // estimated read time
+        string[] tags; // tags
+        address[] likes; // likes
     }
 
     mapping(string => Blog) public blogs; // map for storing blogs
@@ -35,6 +48,7 @@ contract UserContract {
         userAddress = _userAddress;
         adminAddress = _adminAddress;
         anonAadhaarVerifierAddr = _anonAadhaarVerifierAddr;
+        zkContractAddr = address(new ZKContract());
     }
 
     /// @dev Convert an address to uint256, used to check against signal.
@@ -98,7 +112,11 @@ contract UserContract {
         return isAdult;
     }
 
-    function addBlog(string memory blobId, string memory blobHash) public {
+    function addBlog(
+        string memory slug,
+        string memory blobId,
+        string memory blobHash
+    ) public {
         require(
             msg.sender == userAddress,
             "UserContract: Only user can call this"
@@ -106,12 +124,21 @@ contract UserContract {
 
         require(isVerified, "UserContract: Only verified users can add a blog");
 
-        blogs[blobId] = Blog(blobId, blobHash, false);
-        blogSlugs.push(blobId);
+        blogs[slug] = Blog(
+            blobId,
+            blobHash,
+            false,
+            BlogStatus.Unverified,
+            0,
+            0,
+            new string[](0),
+            new address[](0)
+        );
+        blogSlugs.push(slug);
 
         // Logic to add the blog (e.g., storing it in a mapping or emitting an event)
         // This is a placeholder for the actual implementation
-        emit BlogAdded(msg.sender, blobId, blobHash, block.timestamp);
+        emit BlogAdded(msg.sender, slug, blobId, blobHash, block.timestamp);
     }
 
     function getAllBlogSlugs() public view returns (string[] memory) {
@@ -124,7 +151,7 @@ contract UserContract {
         return blogs[slug];
     }
 
-    function publishBlog(string memory blobId) public {
+    function publishBlog(string memory slug) public {
         require(
             msg.sender == userAddress,
             "UserContract: Only user can call this"
@@ -135,9 +162,9 @@ contract UserContract {
         );
 
         // Logic to publish the blog (e.g., changing its status or emitting an event)
-        blogs[blobId].isPublished = true;
+        blogs[slug].isPublished = true;
 
-        emit BlogPublished(msg.sender, blobId, block.timestamp);
+        emit BlogPublished(msg.sender, slug, block.timestamp);
     }
 
     function updateBlog(
@@ -170,6 +197,79 @@ contract UserContract {
         );
     }
 
+    function likeBlog(string memory slug) public {
+        require(blogs[slug].isPublished, "UserContract: Blog is not published");
+        require(
+            !isLikedByUser(slug, msg.sender),
+            "UserContract: User has already liked this blog"
+        );
+        blogs[slug].likes.push(msg.sender);
+    }
+
+    function isLikedByUser(
+        string memory slug,
+        address user
+    ) internal view returns (bool) {
+        for (uint i = 0; i < blogs[slug].likes.length; i++) {
+            if (blogs[slug].likes[i] == user) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function hasUserLikedBlog(
+        string memory slug,
+        address user
+    ) public view returns (bool) {
+        return isLikedByUser(slug, user);
+    }
+
+    function updateAgentAddress(address newAgentAddress) public {
+        require(
+            msg.sender == adminAddress,
+            "UserContract: Only admin can update agent address"
+        );
+        require(
+            newAgentAddress != address(0),
+            "UserContract: New agent address cannot be zero"
+        );
+
+        agentAddress = newAgentAddress;
+    }
+
+    function updateBlogMeta(
+        string memory slug,
+        string[] memory newTags,
+        BlogStatus newStatus,
+        uint256 newReadabilityScore,
+        uint256 newEstimatedReadTime
+    ) public {
+        require(
+            msg.sender == agentAddress || msg.sender == adminAddress,
+            "UserContract: Only agent or admin can update blog meta"
+        );
+        require(
+            blogs[slug].isPublished,
+            "UserContract: Blog must be published to update its meta"
+        );
+
+        blogs[slug].tags = newTags;
+        blogs[slug].status = newStatus;
+        blogs[slug].readabilityScore = newReadabilityScore;
+        blogs[slug].estimatedReadTime = newEstimatedReadTime;
+
+        emit BlogUpdated(
+            msg.sender,
+            slug,
+            blogs[slug].blobHash,
+            blogs[slug].blobId,
+            block.timestamp
+        );
+    }
+
+    // EVENTS
+
     event BlogUpdated(
         address indexed user,
         string slug,
@@ -187,8 +287,9 @@ contract UserContract {
     // Event to log the addition of a new blog
     event BlogAdded(
         address indexed user,
-        string title,
-        string content,
+        string slug,
+        string blobId,
+        string blobHash,
         uint256 timestamp
     );
 }

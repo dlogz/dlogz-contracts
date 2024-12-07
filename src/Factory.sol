@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 import "./UserContract.sol";
 
@@ -8,11 +8,25 @@ contract Factory {
     mapping(address => UserContract) public userContracts;
     address[] public allUsers; // Array to store all user addresses
 
+    address public agentAddress;
+
     address public anonAadhaarVerifierAddr;
 
-    constructor(address _anonAadhaarVerifierAddr) {
+    constructor(
+        address _anonAadhaarVerifierAddr,
+        address _agentAddress
+    ) {
         admin = msg.sender;
         anonAadhaarVerifierAddr = _anonAadhaarVerifierAddr;
+        agentAddress = _agentAddress;
+    }
+
+    function updateAgentAddress(address newAgentAddress) external {
+        require(
+            msg.sender == admin,
+            "Factory: Only admin can update agent address"
+        );
+        agentAddress = newAgentAddress;
     }
 
     function createUserContract() external {
@@ -24,7 +38,8 @@ contract Factory {
         UserContract newUserContract = new UserContract(
             msg.sender,
             admin,
-            anonAadhaarVerifierAddr
+            anonAadhaarVerifierAddr,
+            agentAddress
         );
         userContracts[msg.sender] = newUserContract;
         allUsers.push(msg.sender); // Add user address to the array
