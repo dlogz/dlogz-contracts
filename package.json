@@ -1,0 +1,17 @@
+{
+  "name": "dlogz-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@anon-aadhaar/contracts": "2.4.2",
+    "@anon-aadhaar/core": "2.4.2",
+    "@anon-aadhaar/react": "2.4.2"
+  },
+  "devDependencies": {}
+}
