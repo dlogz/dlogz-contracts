@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "@zk-email/email-tx-builder-contracts/src/EmailAuth.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-
+import "./UserContract.sol";
 /// @title Event that executes a command via email.
 contract ZKContract {
     address public constant dkimAddr =
@@ -15,12 +15,12 @@ contract ZKContract {
         0x9bec7Dd7538315B388a91515734C55c74E2d8829;
 
     address public userContractAddr;
+    address public userAddress;
 
-    event ReadBlogEvent(address indexed emailAuthAddr, string indexed command);
+    event LikeBlogEvent(address indexed emailAuthAddr, string indexed command);
 
-    constructor() {
-        userContractAddr = msg.sender;
-    }
+    // Add initializable state
+    bool private initialized;
 
     /// @notice Returns the address of the verifier contract.
     /// @dev This function is virtual and can be overridden by inheriting contracts.
@@ -110,6 +110,8 @@ contract ZKContract {
         templates[0][0] = "Read";
         templates[0][1] = "blog";
         templates[0][2] = "{string}";
+        templates[0][3] = "from";
+        templates[0][4] = "{ethAddr}";
 
         return templates;
     }
@@ -172,10 +174,24 @@ contract ZKContract {
         uint templateIdx
     ) private {
         if (templateIdx == 0) {
-            string memory command = abi.decode(commandParams[0], (string));
-            emit ReadBlogEvent(emailAuthAddr, command);
+            string memory slug = abi.decode(commandParams[0], (string));
+            address blogOwner = abi.decode(commandParams[1], (address));
+            UserContract userContract = UserContract(blogOwner);
+            userContract.likeBlog(slug, userAddress); // Assuming a function to handle likes
+            emit LikeBlogEvent(emailAuthAddr, slug);
         } else {
             revert("invalid templateIdx");
         }
+    }
+
+    // Remove constructor and add initialize function
+    function initialize(
+        address _userContractAddr,
+        address _userAddress
+    ) external {
+        require(!initialized, "Already initialized");
+        initialized = true;
+        userContractAddr = _userContractAddr;
+        userAddress = _userAddress;
     }
 }

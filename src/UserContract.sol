@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import "@anon-aadhaar/contracts/interfaces/IAnonAadhaar.sol";
-import "./ZKContract.sol";
 
 contract UserContract {
     address public adminAddress;
@@ -10,6 +9,7 @@ contract UserContract {
     address public anonAadhaarVerifierAddr;
     address public agentAddress;
     address public zkContractAddr;
+    address public zkFactoryAddr;
 
     enum BlogStatus {
         Unverified,
@@ -43,12 +43,27 @@ contract UserContract {
     constructor(
         address _userAddress,
         address _adminAddress,
-        address _anonAadhaarVerifierAddr
+        address _anonAadhaarVerifierAddr,
+        address _agentAddress,
+        address _zkFactoryAddr
     ) {
         userAddress = _userAddress;
         adminAddress = _adminAddress;
         anonAadhaarVerifierAddr = _anonAadhaarVerifierAddr;
-        zkContractAddr = address(new ZKContract());
+        agentAddress = _agentAddress;
+        zkFactoryAddr = _zkFactoryAddr;
+    }
+
+    function linkZKContract(
+        address _zkContractAddr,
+        address userAddr
+    ) external {
+        require(
+            msg.sender == adminAddress || msg.sender == zkFactoryAddr,
+            "UserContract: Only admin or ZKFactory can link ZKContract"
+        );
+        require(userAddr == userAddress, "UserContract: Invalid user address");
+        zkContractAddr = _zkContractAddr;
     }
 
     /// @dev Convert an address to uint256, used to check against signal.
@@ -197,13 +212,18 @@ contract UserContract {
         );
     }
 
-    function likeBlog(string memory slug) public {
-        require(blogs[slug].isPublished, "UserContract: Blog is not published");
+    function likeBlog(string memory slug, address user) public {
+        // require(blogs[slug].isPublished, "UserContract: Blog is not published");
+        require(bytes(slug).length > 0, "UserContract: Slug cannot be empty");
+
         require(
-            !isLikedByUser(slug, msg.sender),
-            "UserContract: User has already liked this blog"
+            msg.sender == zkContractAddr || msg.sender == userAddress,
+            "UserContract: Only zk contract or user can like this blog"
         );
-        blogs[slug].likes.push(msg.sender);
+
+        if (!isLikedByUser(slug, user)) {
+            blogs[slug].likes.push(user);
+        }
     }
 
     function isLikedByUser(
@@ -268,7 +288,24 @@ contract UserContract {
         );
     }
 
+    function deleteBlog(string memory slug) public {
+        require(
+            msg.sender == userAddress,
+            "UserContract: Only user can delete a blog"
+        );
+        require(
+            !blogs[slug].isPublished,
+            "UserContract: Blog must not be published to delete"
+        );
+
+        delete blogs[slug];
+
+        emit BlogDeleted(msg.sender, slug, block.timestamp);
+    }
+
     // EVENTS
+
+    event BlogDeleted(address indexed user, string slug, uint256 timestamp);
 
     event BlogUpdated(
         address indexed user,

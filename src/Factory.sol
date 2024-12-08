@@ -5,6 +5,7 @@ import "./UserContract.sol";
 
 contract Factory {
     address public admin;
+    address public zkFactoryAddr;
     mapping(address => UserContract) public userContracts;
     address[] public allUsers; // Array to store all user addresses
 
@@ -14,11 +15,13 @@ contract Factory {
 
     constructor(
         address _anonAadhaarVerifierAddr,
-        address _agentAddress
+        address _agentAddress,
+        address _zkFactoryAddr
     ) {
         admin = msg.sender;
         anonAadhaarVerifierAddr = _anonAadhaarVerifierAddr;
         agentAddress = _agentAddress;
+        zkFactoryAddr = _zkFactoryAddr;
     }
 
     function updateAgentAddress(address newAgentAddress) external {
@@ -39,7 +42,8 @@ contract Factory {
             msg.sender,
             admin,
             anonAadhaarVerifierAddr,
-            agentAddress
+            agentAddress,
+            zkFactoryAddr
         );
         userContracts[msg.sender] = newUserContract;
         allUsers.push(msg.sender); // Add user address to the array

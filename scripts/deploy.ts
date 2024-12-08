@@ -1,43 +1,36 @@
 import '@nomiclabs/hardhat-ethers'
 import { ethers } from 'hardhat'
-import { productionPublicKeyHash, testPublicKeyHash } from '@anon-aadhaar/core'
 
-let publicKeyHash = testPublicKeyHash
-// To deploy contract with production UIDAI public key, will verify real Aadhaar
-if (process.env.PRODUCTION_KEY === 'true') {
-  console.log('Using production key...')
-  publicKeyHash = productionPublicKeyHash
-}
+const anonAadhaarVerifierAddr = '0x719d56B28f1D636fe1C39d2E9772cAF786d22596'
+const agentAddress = '0x16D345e6BF2CCA55E72A907b165162b1641375ea'
 
 async function main() {
 
-  const anonAadhaar = await ethers.deployContract('AnonAadhaar', [
-    '',
-    '',
-  ])
 
-  await anonAadhaar.waitForDeployment()
-  const _anonAadhaarAddress = await anonAadhaar.getAddress()
-  console.log(`AnonAadhaar contract deployed to ${_anonAadhaarAddress}`)
+  // Deploy the factory with the implementation address
+  const zkFactory = await ethers.getContractFactory('ZKFactory')
+  const zkFactoryContract = await zkFactory.deploy()
+  await zkFactoryContract.waitForDeployment()
 
-  // console.log(`AnonAadhaar contract deployed to ${_anonAadhaarAddress}`)
+  const _zkFactoryAddress = await zkFactoryContract.getAddress()
+  console.log(`ZKFactory contract deployed to ${_zkFactoryAddress}`)
 
-  // const anonAadhaarVote = await ethers.deployContract('AnonAadhaarVote', [
-  //   'Do you like this app?',
-  //   ['0', '1', '2', '3', '4', '5'],
-  //   _anonAadhaarAddress,
-  // ])
+  // Deploy the factory with the implementation address
+  const factory = await ethers.getContractFactory('Factory')
+  const factoryContract = await factory.deploy(
+    anonAadhaarVerifierAddr,
+    agentAddress,
+    _zkFactoryAddress
+  )
+  await factoryContract.waitForDeployment()
 
-  // await anonAadhaarVote.waitForDeployment()
-
-  // console.log(
-  //   `AnonAadhaarVote contract deployed to ${await anonAadhaarVote.getAddress()}`,
-  // )
+  const _factoryAddress = await factoryContract.getAddress()
+  console.log(`Factory contract deployed to ${_factoryAddress}`)
 }
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
-main().catch((error: any) => {
+main().catch(error => {
   console.error(error)
   process.exitCode = 1
 })
