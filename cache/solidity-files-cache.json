@@ -40,8 +40,8 @@
       ]
     },
     "/Users/euclid/Documents/ethindia2024/dlogz-contracts/src/UserContract.sol": {
-      "lastModificationDate": 1733623889324,
-      "contentHash": "ab57576e0fec3a4a1bd1c4a998fcbd4e",
+      "lastModificationDate": 1733627198146,
+      "contentHash": "973a9d31d5beebfacf927d33cb422e73",
       "sourceName": "src/UserContract.sol",
       "solcConfig": {
         "version": "0.8.25",
@@ -78,8 +78,8 @@
       ]
     },
     "/Users/euclid/Documents/ethindia2024/dlogz-contracts/src/ZKContract.sol": {
-      "lastModificationDate": 1733623671232,
-      "contentHash": "98ad891c9b08a801449e98cc55dd466d",
+      "lastModificationDate": 1733638648491,
+      "contentHash": "26fd91d051f12b010b57b90f9e63806e",
       "sourceName": "src/ZKContract.sol",
       "solcConfig": {
         "version": "0.8.25",

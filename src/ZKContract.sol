@@ -106,7 +106,7 @@ contract ZKContract {
         string[][] memory templates = new string[][](1);
 
         // Read blog event
-        templates[0] = new string[](3);
+        templates[0] = new string[](5);
         templates[0][0] = "Read";
         templates[0][1] = "blog";
         templates[0][2] = "{string}";

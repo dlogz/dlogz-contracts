@@ -269,10 +269,6 @@ contract UserContract {
             msg.sender == agentAddress || msg.sender == adminAddress,
             "UserContract: Only agent or admin can update blog meta"
         );
-        require(
-            blogs[slug].isPublished,
-            "UserContract: Blog must be published to update its meta"
-        );
 
         blogs[slug].tags = newTags;
         blogs[slug].status = newStatus;
